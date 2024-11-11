@@ -21,15 +21,11 @@
 <body>
     <div id="booking-container"></div>
     <script>
-        let isBookingCompleted = false;
-
         liff.init({
             liffId: "您的LIFF_ID"
         }).then(() => {
-            alert("LIFF 初始化成功");
+            console.log("LIFF 初始化成功");
             initBookingForm();
-        }).catch((err) => {
-            alert("LIFF 初始化失敗: " + err);
         });
 
         function initBookingForm() {
@@ -42,90 +38,47 @@
             iframe.style.height = '100vh';
             iframe.style.border = 'none';
             
-            // 監聽 iframe 載入事件
             iframe.onload = () => {
-                if (!isBookingCompleted) {
-                    checkBookingStatus();
-                }
+                setupCloseButtonListener();
             };
             
             bookingContainer.appendChild(iframe);
         }
 
-        function checkBookingStatus() {
-            // 監聽整個文檔的變化
+        function setupCloseButtonListener() {
+            // 使用 MutationObserver 監聽 DOM 變化
             const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (document.body.innerText.includes('預約成功') || 
-                        document.body.innerText.includes('已確認') ||
-                        document.body.innerText.includes('感謝您的預約')) {
-                        if (!isBookingCompleted) {
-                            isBookingCompleted = true;
-                            handleBookingComplete();
-                        }
+                const closeButtons = document.querySelectorAll('button');
+                closeButtons.forEach(button => {
+                    if (button.textContent.includes('關閉')) {
+                        button.addEventListener('click', () => {
+                            setTimeout(() => {
+                                if (liff.isInClient()) {
+                                    liff.closeWindow();
+                                }
+                            }, 500);
+                        });
                     }
                 });
             });
 
+            // 監聽整個文檔的變化
             observer.observe(document.body, {
                 childList: true,
-                subtree: true,
-                characterData: true
+                subtree: true
             });
 
             // 同時也監聽點擊事件
             document.addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
+                if (e.target.textContent === '關閉' || 
+                    (e.target.closest('button') && e.target.closest('button').textContent === '關閉')) {
                     setTimeout(() => {
-                        if (!isBookingCompleted) {
-                            const text = document.body.innerText;
-                            if (text.includes('預約成功') || 
-                                text.includes('已確認') ||
-                                text.includes('感謝您的預約')) {
-                                isBookingCompleted = true;
-                                handleBookingComplete();
-                            }
+                        if (liff.isInClient()) {
+                            liff.closeWindow();
                         }
-                    }, 1000);
+                    }, 500);
                 }
-            });
-        }
-
-        function handleBookingComplete() {
-            alert("預約完成！準備關閉視窗...");
-            showCompletionMessage();
-            
-            setTimeout(() => {
-                try {
-                    if (liff.isInClient()) {
-                        liff.closeWindow();
-                    } else {
-                        window.close();
-                    }
-                } catch (e) {
-                    alert("關閉視窗時發生錯誤: " + e);
-                }
-            }, 2000);
-        }
-
-        function showCompletionMessage() {
-            const message = document.createElement('div');
-            message.innerHTML = `
-                <div style="
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: rgba(0, 0, 0, 0.8);
-                    color: white;
-                    padding: 20px;
-                    border-radius: 10px;
-                    z-index: 9999;
-                ">
-                    預約完成！
-                </div>
-            `;
-            document.body.appendChild(message);
+            }, true);
         }
     </script>
 </body>
