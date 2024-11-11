@@ -39,8 +39,6 @@
             width: 100%;
             height: 100%;
             border: none;
-            position: relative;
-            z-index: 1;
         }
     </style>
 </head>
@@ -49,6 +47,7 @@
     <div id="booking-container"></div>
     
     <script>
+        let lastUrl = '';
         let isButtonShown = false;
 
         function closeWindow() {
@@ -72,41 +71,7 @@
         }).then(() => {
             console.log("LIFF 初始化成功");
             initBookingForm();
-        }).catch(err => {
-            console.error("LIFF 初始化失敗:", err);
         });
-
-        function checkForCompletion(iframe) {
-            try {
-                console.log("檢查預約狀態");
-                const currentUrl = iframe.contentWindow.location.href;
-                console.log("當前 URL:", currentUrl);
-
-                // 檢查 URL
-                if (currentUrl.includes('confirmed') || 
-                    currentUrl.includes('confirmation') || 
-                    currentUrl.includes('success')) {
-                    console.log("URL 符合完成條件");
-                    showCloseButton();
-                    return;
-                }
-
-                // 檢查頁面內容
-                const iframeDoc = iframe.contentWindow.document;
-                const pageText = iframeDoc.body.innerText;
-                console.log("頁面文字:", pageText);
-
-                if (pageText.includes('已確認預訂') || 
-                    pageText.includes('已確認預約') ||
-                    pageText.includes('預約成功') ||
-                    pageText.includes('已確認')) {
-                    console.log("頁面內容符合完成條件");
-                    showCloseButton();
-                }
-            } catch (e) {
-                // console.log("檢查時發生錯誤:", e);
-            }
-        }
 
         function initBookingForm() {
             const bookingContainer = document.getElementById('booking-container');
@@ -116,23 +81,48 @@
             
             iframe.onload = function() {
                 console.log("iframe 載入完成");
-                checkForCompletion(iframe);
+                try {
+                    const currentUrl = iframe.contentWindow.location.href;
+                    console.log("當前URL:", currentUrl);
+                    
+                    // 如果 URL 發生變化
+                    if (currentUrl !== lastUrl) {
+                        lastUrl = currentUrl;
+                        
+                        // 檢查是否為確認頁面
+                        if (currentUrl.includes('confirmed') || 
+                            currentUrl.includes('confirmation') || 
+                            currentUrl.includes('success')) {
+                            console.log("檢測到預約完成頁面");
+                            showCloseButton();
+                        }
+                    }
+                } catch (e) {
+                    console.log("檢查 URL 時發生錯誤:", e);
+                }
             };
             
             bookingContainer.appendChild(iframe);
 
-            // 定期檢查
+            // 每秒檢查一次 URL 變化
             setInterval(() => {
-                checkForCompletion(iframe);
-            }, 1000);
-
-            // 監聽 iframe 點擊事件
-            window.addEventListener('message', function(event) {
-                if (event.data === 'booking_completed') {
-                    console.log("收到預約完成訊息");
-                    showCloseButton();
+                try {
+                    const currentUrl = iframe.contentWindow.location.href;
+                    if (currentUrl !== lastUrl) {
+                        console.log("URL 變化:", currentUrl);
+                        lastUrl = currentUrl;
+                        
+                        if (currentUrl.includes('confirmed') || 
+                            currentUrl.includes('confirmation') || 
+                            currentUrl.includes('success')) {
+                            console.log("檢測到預約完成頁面");
+                            showCloseButton();
+                        }
+                    }
+                } catch (e) {
+                    // 忽略跨域錯誤
                 }
-            });
+            }, 1000);
         }
     </script>
 </body>
