@@ -3,106 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>法律諮詢預約</title>
+    <title>預約系統</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #booking-container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
-    <div class="container mx-auto px-4 py-8 max-w-md">
-        <form id="bookingForm" class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">法律諮詢預約</h2>
-            
-            <div class="mb-4">
-                <label class="block text-gray-700 font-semibold mb-2">姓名</label>
-                <input type="text" id="name" required
-                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-gray-700 font-semibold mb-2">聯絡電話</label>
-                <input type="tel" id="phone" required pattern="[0-9]{10}"
-                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-gray-700 font-semibold mb-2">預約日期</label>
-                <input type="date" id="date" required
-                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div class="mb-4">
-                <label class="block text-gray-700 font-semibold mb-2">預約時段</label>
-                <select id="time" required
-                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">請選擇時段</option>
-                    <option value="14:00-15:00">14:00-15:00</option>
-                    <option value="15:00-16:00">15:00-16:00</option>
-                    <option value="16:00-17:00">16:00-17:00</option>
-                </select>
-            </div>
-
-            <div class="mb-6">
-                <label class="block text-gray-700 font-semibold mb-2">諮詢議題</label>
-                <textarea id="topic" required rows="3"
-                    class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-            </div>
-
-            <button type="submit"
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                確認預約
-            </button>
-        </form>
-    </div>
-
+<body>
+    <div id="booking-container"></div>
     <script>
-        liff.init({ liffId: "2006550862-Wd8AVOzZ" }).then(() => {
-            if (!liff.isLoggedIn()) {
-                liff.login();
-            }
-            
-            // 設定最小可預約日期為明天
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            document.getElementById('date').min = tomorrow.toISOString().split('T')[0];
-            
-            // 設定最大可預約日期為30天後
-            const maxDate = new Date();
-            maxDate.setDate(maxDate.getDate() + 30);
-            document.getElementById('date').max = maxDate.toISOString().split('T')[0];
-
-            document.getElementById('bookingForm').onsubmit = async (e) => {
-                e.preventDefault();
-                
-                const bookingData = {
-                    name: document.getElementById('name').value,
-                    phone: document.getElementById('phone').value,
-                    date: document.getElementById('date').value,
-                    time: document.getElementById('time').value,
-                    topic: document.getElementById('topic').value,
-                    lineUserId: liff.getContext().userId
-                };
-
-                try {
-                    const response = await fetch('https://script.google.com/macros/s/AKfycbzD732CVGV6csRQI9II3whlDCZjtOK601uU19CKitvQ9W7v20GjEuaN_QOU17nXVlJ5/exec', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(bookingData)
-                    });
-
-                    if (response.ok) {
-                        alert('預約成功！');
-                        liff.closeWindow();
-                    } else {
-                        throw new Error('預約失敗');
-                    }
-                } catch (error) {
-                    alert('發生錯誤，請稍後再試');
-                    console.error(error);
-                }
-            };
+        // 初始化 LIFF
+        liff.init({
+            liffId: "您的LIFF_ID" // 替換成您的 LIFF ID
+        }).then(() => {
+            initBookingForm();
         });
+
+        function initBookingForm() {
+            const bookingContainer = document.getElementById('booking-container');
+            const iframe = document.createElement('iframe');
+            
+            // 設置 Google Calendar 預約表單網址
+            iframe.src = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ntrlpb9fRjEzAzpnfRYei6GcFu3BMoxnWeq_Uf9W2swME22Nzxrsa-YVymj8SY-xB5FE5tTka?gv=true';
+            
+            iframe.style.width = '100%';
+            iframe.style.height = '100vh';
+            iframe.style.border = 'none';
+            
+            iframe.onload = () => {
+                setupAlternativeDetection();
+            };
+            
+            bookingContainer.appendChild(iframe);
+        }
+
+        function setupAlternativeDetection() {
+            const checker = setInterval(() => {
+                try {
+                    const iframe = document.querySelector('iframe');
+                    const currentUrl = iframe.contentWindow.location.href;
+                    if (currentUrl.includes('confirmation') || currentUrl.includes('success')) {
+                        handleBookingComplete();
+                        clearInterval(checker);
+                    }
+                } catch (e) {
+                    // 忽略跨域錯誤
+                }
+            }, 1000);
+        }
+
+        function handleBookingComplete() {
+            showCompletionMessage();
+            setTimeout(() => {
+                liff.closeWindow();
+            }, 2000);
+        }
+
+        function showCompletionMessage() {
+            const message = document.createElement('div');
+            message.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    z-index: 9999;
+                ">
+                    預約完成！
+                </div>
+            `;
+            document.body.appendChild(message);
+        }
     </script>
 </body>
 </html>
