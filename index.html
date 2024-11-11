@@ -33,7 +33,7 @@
             cursor: pointer;
             text-align: center;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-            display: none; /* 預設隱藏 */
+            display: none;
         }
         iframe {
             width: 100%;
@@ -49,16 +49,22 @@
     <div id="booking-container"></div>
     
     <script>
+        let isButtonShown = false;
+
         function closeWindow() {
+            console.log("執行關閉視窗");
             if (liff.isInClient()) {
                 liff.closeWindow();
             }
         }
 
         function showCloseButton() {
-            document.getElementById('close-button').style.display = 'block';
-            // 調整 container 高度
-            document.getElementById('booking-container').style.height = 'calc(100% - 50px)';
+            if (!isButtonShown) {
+                console.log("顯示關閉按鈕");
+                document.getElementById('close-button').style.display = 'block';
+                document.getElementById('booking-container').style.height = 'calc(100% - 50px)';
+                isButtonShown = true;
+            }
         }
 
         liff.init({
@@ -70,41 +76,63 @@
             console.error("LIFF 初始化失敗:", err);
         });
 
+        function checkForCompletion(iframe) {
+            try {
+                console.log("檢查預約狀態");
+                const currentUrl = iframe.contentWindow.location.href;
+                console.log("當前 URL:", currentUrl);
+
+                // 檢查 URL
+                if (currentUrl.includes('confirmed') || 
+                    currentUrl.includes('confirmation') || 
+                    currentUrl.includes('success')) {
+                    console.log("URL 符合完成條件");
+                    showCloseButton();
+                    return;
+                }
+
+                // 檢查頁面內容
+                const iframeDoc = iframe.contentWindow.document;
+                const pageText = iframeDoc.body.innerText;
+                console.log("頁面文字:", pageText);
+
+                if (pageText.includes('已確認預訂') || 
+                    pageText.includes('已確認預約') ||
+                    pageText.includes('預約成功') ||
+                    pageText.includes('已確認')) {
+                    console.log("頁面內容符合完成條件");
+                    showCloseButton();
+                }
+            } catch (e) {
+                // console.log("檢查時發生錯誤:", e);
+            }
+        }
+
         function initBookingForm() {
             const bookingContainer = document.getElementById('booking-container');
             const iframe = document.createElement('iframe');
             
             iframe.src = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ntrlpb9fRjEzAzpnfRYei6GcFu3BMoxnWeq_Uf9W2swME22Nzxrsa-YVymj8SY-xB5FE5tTka?gv=true';
             
+            iframe.onload = function() {
+                console.log("iframe 載入完成");
+                checkForCompletion(iframe);
+            };
+            
             bookingContainer.appendChild(iframe);
 
-            // 監聽預約完成
+            // 定期檢查
             setInterval(() => {
-                try {
-                    const currentUrl = iframe.contentWindow.location.href;
-                    if (currentUrl.includes('confirmation') || 
-                        currentUrl.includes('success') || 
-                        currentUrl.includes('confirmed')) {
-                        console.log("檢測到預約完成");
-                        showCloseButton(); // 顯示關閉按鈕
-                    }
-                } catch (e) {
-                    // 忽略跨域錯誤
-                }
+                checkForCompletion(iframe);
             }, 1000);
 
-            // 監聽 iframe 內容變化
-            iframe.onload = function() {
-                try {
-                    const iframeContent = iframe.contentDocument || iframe.contentWindow.document;
-                    if (iframeContent.body.innerText.includes('已確認預訂') || 
-                        iframeContent.body.innerText.includes('預約成功')) {
-                        showCloseButton();
-                    }
-                } catch (e) {
-                    // 忽略跨域錯誤
+            // 監聽 iframe 點擊事件
+            window.addEventListener('message', function(event) {
+                if (event.data === 'booking_completed') {
+                    console.log("收到預約完成訊息");
+                    showCloseButton();
                 }
-            };
+            });
         }
     </script>
 </body>
