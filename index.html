@@ -26,6 +26,9 @@
             liffId: "2006556597-6AXyNb3L" // 替換成您的 LIFF ID
         }).then(() => {
             initBookingForm();
+            console.log("LIFF 初始化成功");
+        }).catch((err) => {
+            console.log("LIFF 初始化失敗", err);
         });
 
         function initBookingForm() {
@@ -39,7 +42,9 @@
             iframe.style.height = '100vh';
             iframe.style.border = 'none';
             
+            // 監聽 iframe 載入完成
             iframe.onload = () => {
+                console.log("iframe 載入完成");
                 setupAlternativeDetection();
             };
             
@@ -47,25 +52,59 @@
         }
 
         function setupAlternativeDetection() {
+            console.log("開始監控預約狀態");
+            
+            // 方法1: 監控 URL 變化
             const checker = setInterval(() => {
                 try {
                     const iframe = document.querySelector('iframe');
                     const currentUrl = iframe.contentWindow.location.href;
-                    if (currentUrl.includes('confirmation') || currentUrl.includes('success')) {
+                    console.log("當前 URL:", currentUrl);
+                    
+                    // 擴大檢查條件
+                    if (currentUrl.includes('confirmation') || 
+                        currentUrl.includes('success') || 
+                        currentUrl.includes('confirmed') || 
+                        currentUrl.includes('thank') ||
+                        currentUrl.includes('done')) {
+                        console.log("檢測到預約完成");
                         handleBookingComplete();
                         clearInterval(checker);
                     }
                 } catch (e) {
-                    // 忽略跨域錯誤
+                    // console.log("檢查 URL 時發生錯誤", e);
                 }
             }, 1000);
+
+            // 方法2: 監聽整個文檔的點擊事件
+            document.addEventListener('click', function(e) {
+                if (e.target.textContent.includes('確認') || 
+                    e.target.textContent.includes('完成') || 
+                    e.target.textContent.includes('送出')) {
+                    console.log("檢測到確認按鈕點擊");
+                    setTimeout(handleBookingComplete, 2000);
+                }
+            });
         }
 
         function handleBookingComplete() {
+            console.log("執行完成處理");
             showCompletionMessage();
-            setTimeout(() => {
-                liff.closeWindow();
-            }, 2000);
+            
+            // 確保 LIFF 可用
+            if (liff.isInClient()) {
+                console.log("在 LINE APP 中");
+                setTimeout(() => {
+                    try {
+                        liff.closeWindow();
+                        console.log("嘗試關閉視窗");
+                    } catch (e) {
+                        console.log("關閉視窗時發生錯誤", e);
+                    }
+                }, 2000);
+            } else {
+                console.log("不在 LINE APP 中");
+            }
         }
 
         function showCompletionMessage() {
