@@ -16,18 +16,18 @@
             width: 100%;
             height: 100vh;
             border: none;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <iframe src="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ntrlpb9fRjEzAzpnfRYei6GcFu3BMoxnWeq_Uf9W2swME22Nzxrsa-YVymj8SY-xB5FE5tTka?gv=true"></iframe>
+    <iframe 
+        src="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ntrlpb9fRjEzAzpnfRYei6GcFu3BMoxnWeq_Uf9W2swME22Nzxrsa-YVymj8SY-xB5FE5tTka?gv=true" 
+        allow="camera *; microphone *">
+    </iframe>
     
     <script>
-        liff.init({
-            liffId: "2006556597-6AXyNb3L"
-        }).then(() => {
-            console.log("LIFF 初始化成功");
-        });
+        liff.init({ liffId: "2006556597-6AXyNb3L" });
     </script>
 </body>
 </html>
