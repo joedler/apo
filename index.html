@@ -11,73 +11,81 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
+            position: relative;
         }
         #booking-container {
             width: 100%;
-            height: 100%;
+            height: calc(100% - 60px); /* 減去按鈕的高度 */
+            position: relative;
         }
         #close-button {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
             background-color: #00B900;
             color: white;
             border: none;
-            border-radius: 5px;
             font-size: 16px;
-            z-index: 1000;
-            display: none;
+            font-weight: bold;
+            z-index: 999999;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
+    <button id="close-button" onclick="closeWindow()">關閉視窗</button>
     <div id="booking-container"></div>
-    <button id="close-button">關閉視窗</button>
+    
     <script>
+        function closeWindow() {
+            console.log("關閉按鈕被點擊");
+            if (liff.isInClient()) {
+                console.log("執行 LIFF closeWindow");
+                liff.closeWindow();
+            }
+        }
+
         liff.init({
             liffId: "2006556597-6AXyNb3L"
         }).then(() => {
             console.log("LIFF 初始化成功");
             initBookingForm();
+        }).catch(err => {
+            console.error("LIFF 初始化失敗:", err);
         });
 
         function initBookingForm() {
             const bookingContainer = document.getElementById('booking-container');
             const iframe = document.createElement('iframe');
-            const closeButton = document.getElementById('close-button');
             
             iframe.src = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ntrlpb9fRjEzAzpnfRYei6GcFu3BMoxnWeq_Uf9W2swME22Nzxrsa-YVymj8SY-xB5FE5tTka?gv=true';
             
-            iframe.style.width = '100%';
-            iframe.style.height = '100vh';
-            iframe.style.border = 'none';
-            
+            // 監聽 iframe 載入完成
             iframe.onload = () => {
-                // 當 iframe 載入完成後，顯示關閉按鈕
-                closeButton.style.display = 'block';
+                console.log("iframe 載入完成");
             };
             
             bookingContainer.appendChild(iframe);
 
-            // 監聽自定義關閉按鈕
-            closeButton.addEventListener('click', () => {
-                if (liff.isInClient()) {
-                    liff.closeWindow();
-                } else {
-                    window.close();
-                }
-            });
-
-            // 監聽 URL 變化
+            // 監聽預約完成
             setInterval(() => {
                 try {
                     const currentUrl = iframe.contentWindow.location.href;
                     if (currentUrl.includes('confirmation') || 
                         currentUrl.includes('success') || 
                         currentUrl.includes('confirmed')) {
-                        // 自動觸發關閉
+                        console.log("檢測到預約完成");
                         setTimeout(() => {
                             if (liff.isInClient()) {
                                 liff.closeWindow();
