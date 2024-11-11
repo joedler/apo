@@ -21,90 +21,91 @@
 <body>
     <div id="booking-container"></div>
     <script>
-        // 初始化 LIFF
+        let isBookingCompleted = false;
+
         liff.init({
-            liffId: "2006556597-6AXyNb3L" // 替換成您的 LIFF ID
+            liffId: "您的LIFF_ID"
         }).then(() => {
+            alert("LIFF 初始化成功");
             initBookingForm();
-            console.log("LIFF 初始化成功");
         }).catch((err) => {
-            console.log("LIFF 初始化失敗", err);
+            alert("LIFF 初始化失敗: " + err);
         });
 
         function initBookingForm() {
             const bookingContainer = document.getElementById('booking-container');
             const iframe = document.createElement('iframe');
             
-            // 設置 Google Calendar 預約表單網址
             iframe.src = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ntrlpb9fRjEzAzpnfRYei6GcFu3BMoxnWeq_Uf9W2swME22Nzxrsa-YVymj8SY-xB5FE5tTka?gv=true';
             
             iframe.style.width = '100%';
             iframe.style.height = '100vh';
             iframe.style.border = 'none';
             
-            // 監聽 iframe 載入完成
+            // 監聽 iframe 載入事件
             iframe.onload = () => {
-                console.log("iframe 載入完成");
-                setupAlternativeDetection();
+                if (!isBookingCompleted) {
+                    checkBookingStatus();
+                }
             };
             
             bookingContainer.appendChild(iframe);
         }
 
-        function setupAlternativeDetection() {
-            console.log("開始監控預約狀態");
-            
-            // 方法1: 監控 URL 變化
-            const checker = setInterval(() => {
-                try {
-                    const iframe = document.querySelector('iframe');
-                    const currentUrl = iframe.contentWindow.location.href;
-                    console.log("當前 URL:", currentUrl);
-                    
-                    // 擴大檢查條件
-                    if (currentUrl.includes('confirmation') || 
-                        currentUrl.includes('success') || 
-                        currentUrl.includes('confirmed') || 
-                        currentUrl.includes('thank') ||
-                        currentUrl.includes('done')) {
-                        console.log("檢測到預約完成");
-                        handleBookingComplete();
-                        clearInterval(checker);
+        function checkBookingStatus() {
+            // 監聽整個文檔的變化
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (document.body.innerText.includes('預約成功') || 
+                        document.body.innerText.includes('已確認') ||
+                        document.body.innerText.includes('感謝您的預約')) {
+                        if (!isBookingCompleted) {
+                            isBookingCompleted = true;
+                            handleBookingComplete();
+                        }
                     }
-                } catch (e) {
-                    // console.log("檢查 URL 時發生錯誤", e);
-                }
-            }, 1000);
+                });
+            });
 
-            // 方法2: 監聽整個文檔的點擊事件
-            document.addEventListener('click', function(e) {
-                if (e.target.textContent.includes('確認') || 
-                    e.target.textContent.includes('完成') || 
-                    e.target.textContent.includes('送出')) {
-                    console.log("檢測到確認按鈕點擊");
-                    setTimeout(handleBookingComplete, 2000);
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+                characterData: true
+            });
+
+            // 同時也監聽點擊事件
+            document.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
+                    setTimeout(() => {
+                        if (!isBookingCompleted) {
+                            const text = document.body.innerText;
+                            if (text.includes('預約成功') || 
+                                text.includes('已確認') ||
+                                text.includes('感謝您的預約')) {
+                                isBookingCompleted = true;
+                                handleBookingComplete();
+                            }
+                        }
+                    }, 1000);
                 }
             });
         }
 
         function handleBookingComplete() {
-            console.log("執行完成處理");
+            alert("預約完成！準備關閉視窗...");
             showCompletionMessage();
             
-            // 確保 LIFF 可用
-            if (liff.isInClient()) {
-                console.log("在 LINE APP 中");
-                setTimeout(() => {
-                    try {
+            setTimeout(() => {
+                try {
+                    if (liff.isInClient()) {
                         liff.closeWindow();
-                        console.log("嘗試關閉視窗");
-                    } catch (e) {
-                        console.log("關閉視窗時發生錯誤", e);
+                    } else {
+                        window.close();
                     }
-                }, 2000);
-            } else {
-                console.log("不在 LINE APP 中");
-            }
+                } catch (e) {
+                    alert("關閉視窗時發生錯誤: " + e);
+                }
+            }, 2000);
         }
 
         function showCompletionMessage() {
